@@ -24,16 +24,39 @@ class DashboardViewSet(viewsets.ViewSet):
         Retorna um resumo das estatísticas do dashboard.
         """
         try:
+            # Parâmetros de período personalizados
+            custom_month = request.query_params.get('month')  # Formato esperado YYYY-MM
             restaurant = request.user.settings  # separa métricas por restaurante
             today = timezone.now().date()
             week_ago = today - timedelta(days=7)
             month_ago = today - timedelta(days=30)
 
+            # Se o usuário solicitar um mês específico no formato YYYY-MM
+            from datetime import date
+            if custom_month:
+                try:
+                    year, month = map(int, custom_month.split('-'))
+                    first_day_custom = date(year, month, 1)
+                    # calcular último dia do mês
+                    if month == 12:
+                        last_day_custom = date(year + 1, 1, 1) - timedelta(days=1)
+                    else:
+                        last_day_custom = date(year, month + 1, 1) - timedelta(days=1)
+                    month_filter_start = first_day_custom
+                    month_filter_end = last_day_custom
+                except ValueError:
+                    custom_month = None  # formato inválido, ignorar
+
+            if not custom_month:
+                month_filter_start = month_ago
+                month_filter_end = today
+
             # Estatísticas do dia
             today_orders = Order.objects.filter(restaurant=restaurant, created_at__date=today)
+            accepted_statuses = ['confirmed', 'preparing', 'ready', 'delivered']
             today_stats = {
                 'orders': today_orders.count(),
-                'revenue': float(today_orders.aggregate(
+                'revenue': float(Order.objects.filter(restaurant=restaurant, created_at__date=today, status__in=accepted_statuses).aggregate(
                     total=Sum('total_amount')
                 )['total'] or 0)
             }
@@ -42,16 +65,24 @@ class DashboardViewSet(viewsets.ViewSet):
             week_orders = Order.objects.filter(restaurant=restaurant, created_at__date__gte=week_ago)
             week_stats = {
                 'orders': week_orders.count(),
-                'revenue': float(week_orders.aggregate(
+                'revenue': float(Order.objects.filter(restaurant=restaurant, created_at__date__gte=week_ago, status__in=accepted_statuses).aggregate(
                     total=Sum('total_amount')
                 )['total'] or 0)
             }
 
             # Estatísticas do mês
-            month_orders = Order.objects.filter(restaurant=restaurant, created_at__date__gte=month_ago)
+            month_orders = Order.objects.filter(
+                restaurant=restaurant,
+                created_at__date__gte=month_filter_start,
+                created_at__date__lte=month_filter_end
+            )
             month_stats = {
                 'orders': month_orders.count(),
-                'revenue': float(month_orders.aggregate(
+                'revenue': float(Order.objects.filter(
+                    restaurant=restaurant,
+                    created_at__date__gte=month_filter_start,
+                    created_at__date__lte=month_filter_end,
+                    status__in=accepted_statuses).aggregate(
                     total=Sum('total_amount')
                 )['total'] or 0)
             }
@@ -70,6 +101,7 @@ class DashboardViewSet(viewsets.ViewSet):
                 'week_revenue': week_stats['revenue'],
                 'month_orders': month_stats['orders'],
                 'month_revenue': month_stats['revenue'],
+                'cancelled_orders': Order.objects.filter(restaurant=restaurant, status='cancelled').count(),
                 'recent_orders': [
                     {
                         'id': order.id,
