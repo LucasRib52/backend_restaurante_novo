@@ -227,5 +227,10 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'assinaturas': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }

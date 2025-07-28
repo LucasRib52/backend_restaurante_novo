@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from settings.models import Settings
 from django.utils import timezone
+from assinaturas.serializers import PlanSerializer
 
 class CompanySerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source='owner.username', read_only=True)

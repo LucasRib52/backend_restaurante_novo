@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from settings.models import Settings
 from assinaturas.models import Subscription
 from .serializers import CompanySerializer
+from assinaturas.models import Plan
+from assinaturas.serializers import PlanSerializer
 
 # Create your views here.
 
@@ -116,3 +118,23 @@ class DashboardMetricsView(APIView):
             'start_date': start_date,
             'end_date': end_date,
         })
+
+class PlanListCreateView(generics.ListCreateAPIView):
+    queryset = Plan.objects.all()
+    serializer_class = PlanSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.IsAdminUser()]
+        return super().get_permissions()
+
+class PlanRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Plan.objects.all()
+    serializer_class = PlanSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
+            return [permissions.IsAdminUser()]
+        return super().get_permissions()
