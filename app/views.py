@@ -64,6 +64,7 @@ def register(request):
         opening_time="08:00",
         closing_time="18:00",
         is_open=True,
+        is_active=True,
         delivery_available=True,
         delivery_fee=0,
         minimum_order_value=0,
