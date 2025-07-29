@@ -7,6 +7,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from settings.models import Settings
+from assinaturas.models import Subscription
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -54,7 +55,7 @@ def register(request):
     user.is_superuser = False
     user.save()
     # Cria configurações padrão para o novo usuário com valores default
-    Settings.objects.create(
+    settings_obj = Settings.objects.create(
         owner=user,
         business_name=nome or "Meu Negócio",
         business_phone="",
@@ -68,6 +69,14 @@ def register(request):
         minimum_order_value=0,
         tax_rate=0,
         payment_methods={}
+    )
+    from datetime import date, timedelta
+    Subscription.objects.create(
+        company=settings_obj,
+        plan='free',
+        start_date=date.today(),
+        end_date=date.today() + timedelta(days=7),
+        active=True
     )
     refresh = RefreshToken.for_user(user)
     access = str(refresh.access_token)
