@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Settings, OpeningHour
 from datetime import datetime, time
+from django.conf import settings as django_settings
 
 class OpeningHourSerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,6 +28,7 @@ class SettingsSerializer(serializers.ModelSerializer):
     opening_hours = OpeningHourSerializer(many=True, read_only=True)
     business_photo = serializers.ImageField(required=False, allow_null=True)
     business_slug = serializers.SlugField(required=False, allow_null=True)
+    logo_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Settings
@@ -42,4 +44,9 @@ class SettingsSerializer(serializers.ModelSerializer):
             'delivery_fee': {'required': False},
             'minimum_order_value': {'required': False},
             'tax_rate': {'required': False},
-        } 
+        }
+    
+    def get_logo_url(self, obj):
+        if obj.business_photo:
+            return f"{django_settings.MEDIA_URL}{obj.business_photo}"
+        return None 
