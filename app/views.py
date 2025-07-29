@@ -20,7 +20,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'is_superuser': self.user.is_superuser,
                 'is_staff': self.user.is_staff,
                 # block flag from Settings
-                'is_active': getattr(self.user, 'settings').is_active,
+                'is_active': getattr(getattr(self.user, 'settings', None), 'is_active', self.user.is_active),
             }
         })
         return data
