@@ -85,5 +85,8 @@ def register(request):
         'id': user.id,
         'username': user.username,
         'email': user.email,
+        'is_superuser': user.is_superuser,
+        'is_staff': user.is_staff,
+        'is_active': settings_obj.is_active,
     }
     return Response({'access': access, 'refresh': str(refresh), 'user': user_data}, status=status.HTTP_201_CREATED) 

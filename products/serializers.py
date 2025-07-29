@@ -195,13 +195,15 @@ class PromotionCreateSerializer(serializers.ModelSerializer):
             elif key == 'is_active':
                 mutable_data[key] = (value[0] if isinstance(value, list) else value).lower() == 'true'
             elif key in ['items', 'rewards']:
-                try:
-                    value_str = value[0] if isinstance(value, list) else value
-                    mutable_data[key] = json.loads(value_str)
-                    print(f"JSON decodificado para {key}:", mutable_data[key])
-                except json.JSONDecodeError as e:
-                    print(f"Erro ao decodificar {key}:", e)
-                    raise serializers.ValidationError({key: 'Formato inválido'})
+                # Aceita listas de dicionários diretamente
+                if isinstance(value, list) and (not value or isinstance(value[0], dict)):
+                    mutable_data[key] = value
+                else:
+                    try:
+                        value_str = value[0] if isinstance(value, list) else value
+                        mutable_data[key] = json.loads(value_str)
+                    except (TypeError, json.JSONDecodeError):
+                        raise serializers.ValidationError({key: 'Formato inválido'})
             else:
                 mutable_data[key] = value[0] if isinstance(value, list) else value
 
