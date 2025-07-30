@@ -78,9 +78,15 @@ class ProductViewSet(viewsets.ModelViewSet):
         Cria um novo produto e seus ingredientes.
         """
         print("Iniciando criação do produto...")
+        print(f"Usuário: {self.request.user.username}")
+        print(f"Settings do usuário: {self.request.user.settings}")
+        
         # Primeiro, salva o produto vinculando à restaurante do usuário
         product = serializer.save(restaurant=self.request.user.settings)
-        print(f"Produto criado: {product.name}")
+        # Forçar produto como ativo por padrão
+        product.is_active = True
+        product.save()
+        print(f"Produto criado: {product.name}, Ativo: {product.is_active}, Restaurant: {product.restaurant.business_slug}")
         
         # Processa os ingredientes
         ingredients = []
@@ -174,6 +180,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         print("Iniciando atualização do produto...")
         # Primeiro, salva as alterações do produto
         product = serializer.save()
+        # Forçar produto como ativo por padrão
+        product.is_active = True
+        product.save()
         print(f"Produto salvo: {product.name}")
         
         # Processa os novos ingredientes
