@@ -106,6 +106,13 @@ class Settings(models.Model):
     def save(self, *args, **kwargs):
         if not self.business_slug and self.business_name:
             self.business_slug = slugify(self.business_name)
+        
+        # Verificar se o business_slug já existe (exceto para este próprio objeto)
+        if self.business_slug:
+            existing = Settings.objects.filter(business_slug=self.business_slug).exclude(pk=self.pk)
+            if existing.exists():
+                raise ValidationError(f'Já existe um negócio com o slug "{self.business_slug}". Escolha outro nome.')
+        
         super().save(*args, **kwargs)
 
     def is_open_now(self):
