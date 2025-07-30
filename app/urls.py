@@ -19,7 +19,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import CustomTokenObtainPairView, verify_token, register
+from .views import CustomTokenObtainPairView, verify_token, register, check_slug_availability
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/verify-token/', verify_token, name='verify_token'),
     path('api/register/', register, name='register'),
+    path('api/check-slug/', check_slug_availability, name='check_slug_availability'),
     
     # Apps
     path('api/products/', include('products.urls')),
