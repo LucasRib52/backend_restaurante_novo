@@ -48,5 +48,8 @@ class SettingsSerializer(serializers.ModelSerializer):
     
     def get_logo_url(self, obj):
         if obj.business_photo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.business_photo.url)
             return f"{django_settings.MEDIA_URL}{obj.business_photo}"
         return None 
