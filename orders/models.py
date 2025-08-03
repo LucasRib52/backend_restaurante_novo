@@ -16,6 +16,7 @@ class Order(models.Model):
     ]
 
     restaurant = models.ForeignKey(Settings, on_delete=models.CASCADE, related_name='orders')  # separação por empresa
+    order_number = models.PositiveIntegerField(verbose_name='Número do Pedido', null=True, blank=True)
     customer_name = models.CharField(max_length=100, verbose_name='Nome do Cliente')
     customer_phone = models.CharField(max_length=20, verbose_name='Telefone do Cliente')
     customer_address = models.CharField(max_length=200, blank=True, verbose_name='Endereço do Cliente')
@@ -33,7 +34,14 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Pedido #{self.id} - {self.customer_name}"
+        return f"Pedido #{self.order_number or self.id} - {self.customer_name}"
+
+    def save(self, *args, **kwargs):
+        # Se não tem order_number, gera a sequência baseada na quantidade de pedidos da empresa
+        if not self.order_number:
+            total = Order.objects.filter(restaurant=self.restaurant).count()
+            self.order_number = total + 1
+        super().save(*args, **kwargs)
 
 class OrderItem(models.Model):
     """

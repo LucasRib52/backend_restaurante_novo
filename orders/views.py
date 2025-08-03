@@ -55,6 +55,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         """
         Retorna todos os pedidos.
         """
+        if not self.request.user.is_authenticated:
+            return Order.objects.none()
         return Order.objects.filter(restaurant=self.request.user.settings).order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
