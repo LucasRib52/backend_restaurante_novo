@@ -80,7 +80,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
         """
         Atualiza o status de um pedido.

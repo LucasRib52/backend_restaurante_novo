@@ -12,6 +12,6 @@ urlpatterns = [
         'patch': 'partial_update',
         'delete': 'destroy'
     }), name='order-detail'),
-    path('<int:pk>/update-status/', OrderViewSet.as_view({'post': 'update_status'}), name='order-update-status'),
+    path('<int:pk>/update-status/', OrderViewSet.as_view({'patch': 'update_status'}), name='order-update-status'),
     path('printer-settings/', PrinterSettingsView.as_view(), name='printer-settings'),
 ] 
