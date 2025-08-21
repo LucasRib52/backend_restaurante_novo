@@ -41,10 +41,15 @@ class Order(models.Model):
         return f"Pedido #{self.order_number or self.id} - {self.customer_name}"
 
     def save(self, *args, **kwargs):
-        # Se não tem order_number, gera a sequência baseada na quantidade de pedidos da empresa
-        if not self.order_number:
-            total = Order.objects.filter(restaurant=self.restaurant).count()
-            self.order_number = total + 1
+        # Se não tem order_number, gera usando MAX(order_number)+1 por restaurante para evitar colisões
+        if not self.order_number and self.restaurant_id:
+            from django.db.models import Max
+            max_num = (
+                Order.objects.filter(restaurant=self.restaurant)
+                .aggregate(m=Max('order_number'))
+                .get('m')
+            )
+            self.order_number = (max_num or 0) + 1
         super().save(*args, **kwargs)
 
 class OrderItem(models.Model):

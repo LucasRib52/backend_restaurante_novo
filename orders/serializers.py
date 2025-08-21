@@ -80,15 +80,17 @@ class OrderSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     payment_method = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     change_amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
-    id = serializers.SerializerMethodField()  # Sobrescrever o ID para usar order_number
+    # Campo auxiliar apenas para exibição (não substitui o ID)
+    display_number = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ('id', 'order_number', 'customer_name', 'customer_phone', 'customer_address', 'status', 'status_display', 'total_amount',
+        fields = ('id', 'order_number', 'display_number', 'customer_name', 'customer_phone', 'customer_address', 'status', 'status_display', 'total_amount',
                  'notes', 'items', 'created_at', 'updated_at', 'payment_method', 'change_amount')
         read_only_fields = ('order_number', 'created_at', 'updated_at')
 
-    def get_id(self, obj):
+    def get_display_number(self, obj):
+        # Retorna o número amigável para UI: prioriza order_number, senão usa o ID
         return obj.order_number or obj.id
 
     def get_customer_name(self, obj):
