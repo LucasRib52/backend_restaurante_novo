@@ -131,12 +131,29 @@ class OrderViewSet(viewsets.ModelViewSet):
         Atualiza o status de um pedido.
         """
         try:
-            order = self.get_object()
+            # Para update_status, usar queryset sem filtros de restaurante
+            # para permitir acesso ao pedido específico
+            order = Order.objects.get(pk=pk)
+            
+            # Verificar se o usuário tem acesso ao pedido
+            if hasattr(request.user, 'settings') and request.user.settings:
+                if order.restaurant != request.user.settings:
+                    return Response(
+                        {'error': 'Acesso negado a este pedido'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            
             new_status = request.data.get('status')
+            
+            if not new_status:
+                return Response(
+                    {'error': 'Status não fornecido'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             if new_status not in dict(Order.STATUS_CHOICES):
                 return Response(
-                    {'error': 'Status inválido'},
+                    {'error': f'Status inválido: {new_status}. Status válidos: {list(dict(Order.STATUS_CHOICES).keys())}'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -145,6 +162,12 @@ class OrderViewSet(viewsets.ModelViewSet):
 
             serializer = self.get_serializer(order)
             return Response(serializer.data)
+            
+        except Order.DoesNotExist:
+            return Response(
+                {'error': 'Pedido não encontrado'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         except Exception as e:
             return Response(
                 {'error': f'Erro ao atualizar status: {str(e)}'},
