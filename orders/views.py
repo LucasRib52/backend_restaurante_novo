@@ -11,6 +11,24 @@ from .serializers import (
     OrderUpdateSerializer, OrderItemSerializer
 )
 from settings.models import Settings
+from rest_framework.pagination import PageNumberPagination
+
+
+class OrdersPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+    
+    def get_paginated_response(self, data):
+        """
+        Retorna resposta paginada com contagem total correta.
+        """
+        return Response({
+            'count': self.page.paginator.count,
+            'next': self.get_next_link(),
+            'previous': self.get_previous_link(),
+            'results': data
+        })
 
 class CreateOrderView(views.APIView):
     """
@@ -40,6 +58,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     """
     serializer_class = OrderSerializer
     http_method_names = ['get', 'put', 'patch', 'delete', 'post']
+    pagination_class = OrdersPagination
 
     def get_serializer_class(self):
         """
@@ -53,15 +72,37 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Retorna todos os pedidos.
+        Queryset otimizado com filtros e prefetch para evitar N+1.
+        Suporta filtros via query params: status, last24h, restaurant_id.
         """
-        # Temporariamente retornar todos os pedidos sem filtro
-        return Order.objects.all().order_by('-created_at')
-        
-        # Código original comentado:
-        # if not self.request.user.is_authenticated:
-        #     return Order.objects.none()
-        # return Order.objects.filter(restaurant=self.request.user.settings).order_by('-created_at')
+        qs = (
+            Order.objects.select_related('restaurant', 'client_order')
+            .prefetch_related(
+                'items__product',
+                'items__promotion',
+                'items__ingredients',
+                'items__ingredients__ingredient',
+            )
+            .order_by('-created_at')
+        )
+
+        # Filtrar por restaurante se fornecido
+        restaurant_id = self.request.query_params.get('restaurant_id')
+        if restaurant_id:
+            qs = qs.filter(restaurant_id=restaurant_id)
+
+        # Filtrar por status
+        status_param = self.request.query_params.get('status')
+        if status_param and status_param != 'all':
+            qs = qs.filter(status=status_param)
+
+        # Últimas 24 horas
+        last24h = self.request.query_params.get('last24h')
+        if last24h in ['1', 'true', 'True', 'yes', 'sim']:
+            recent_time = timezone.now() - timedelta(hours=24)
+            qs = qs.filter(created_at__gte=recent_time)
+
+        return qs
 
     def create(self, request, *args, **kwargs):
         """

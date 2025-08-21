@@ -16,22 +16,26 @@ class Order(models.Model):
     ]
 
     restaurant = models.ForeignKey(Settings, on_delete=models.CASCADE, related_name='orders')  # separação por empresa
-    order_number = models.PositiveIntegerField(verbose_name='Número do Pedido', null=True, blank=True)
+    order_number = models.PositiveIntegerField(verbose_name='Número do Pedido', null=True, blank=True, db_index=True)
     customer_name = models.CharField(max_length=100, verbose_name='Nome do Cliente')
     customer_phone = models.CharField(max_length=20, verbose_name='Telefone do Cliente')
     customer_address = models.CharField(max_length=200, blank=True, verbose_name='Endereço do Cliente')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Status')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Status', db_index=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Valor Total')
     notes = models.TextField(blank=True, verbose_name='Observações')
     payment_method = models.CharField(max_length=30, blank=True, null=True, verbose_name='Forma de Pagamento')
     change_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Troco para')
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = 'Pedido'
         verbose_name_plural = 'Pedidos'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['restaurant', 'created_at']),
+            models.Index(fields=['status', 'created_at']),
+        ]
 
     def __str__(self):
         return f"Pedido #{self.order_number or self.id} - {self.customer_name}"

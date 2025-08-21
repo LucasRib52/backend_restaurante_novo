@@ -25,49 +25,15 @@ class OrderItemIngredientSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
 
     def get_group_name(self, obj):
-        # Prioridade: campo persistido no modelo
+        # MODO RÁPIDO: evitar consultas extras por produto/ProductIngredient.
+        # Prioridade simples: campo salvo > extra > categoria > 'Outros'.
         if obj.group_name:
             return obj.group_name
-        """
-        Retorna o nome do grupo do ingrediente.
-        Prioriza ProductIngredient.group_name, depois extras como 'Extras', depois categoria do ingrediente, depois 'Outros'.
-        """
-        try:
-            # Tenta usar o produto associado ao item
-            product = obj.order_item.product
-            if not product:
-                # Associa dinamicamente se possível
-                product_name = obj.order_item.product_name
-                product = Product.objects.filter(name__iexact=product_name).first()
-                if product:
-                    print(f"[AUTO-FIX] Produto associado dinamicamente para OrderItem {obj.order_item.id}: {product.name}")
-            # Busca associação de ingrediente no produto
-            try:
-                pi = ProductIngredient.objects.filter(product=product, ingredient=obj.ingredient).first()
-                if pi:
-                    print(f"[DEBUG] Produto: {product.name}, Ingrediente: {obj.ingredient.name}, Grupo: {pi.group_name}")
-                    return pi.group_name
-                else:
-                    raise ProductIngredient.DoesNotExist
-            except ProductIngredient.DoesNotExist:
-                # Ingrediente extra sem grupo definido
-                if obj.ingredient and obj.ingredient.is_extra:
-                    print(f"[DEBUG] Ingrediente {obj.ingredient.name} é extra mas sem grupo definido, usando 'Extras'")
-                    return 'Extras'
-                # Agrupa pela categoria do ingrediente
-                if obj.ingredient and obj.ingredient.category:
-                    print(f"[DEBUG] Grupo não encontrado, usando categoria do ingrediente como grupo: {obj.ingredient.category.name}")
-                    return obj.ingredient.category.name
-                # Fallback geral
-                print(f"[DEBUG] Grupo não encontrado e sem categoria, usando 'Outros'")
-                return 'Outros'
-        except Exception as e:
-            print(f"[DEBUG] Erro ao buscar group_name: {e}, fallback para categoria ou 'Outros'")
-            if obj.ingredient and obj.ingredient.is_extra:
-                return 'Extras'
-            if obj.ingredient and obj.ingredient.category:
-                return obj.ingredient.category.name
-            return 'Outros'
+        if obj.ingredient and getattr(obj.ingredient, 'is_extra', False):
+            return 'Extras'
+        if obj.ingredient and getattr(obj.ingredient, 'category', None):
+            return getattr(obj.ingredient.category, 'name', 'Outros')
+        return 'Outros'
 
     # is_extra vem direto do modelo agora, portanto não precisamos mais de lógica adicional.
 
